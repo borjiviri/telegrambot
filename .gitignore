@@ -1,0 +1,7 @@
+# Telegram bot stuff
+*.token
+*.py[co]
+*.log
+last_update_id
+notes
+lib
