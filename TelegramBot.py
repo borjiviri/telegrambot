@@ -14,8 +14,11 @@ from Logger import Logger
 logger = Logger.logger
 
 class TelegramBot(Daemon):
+    '''
+    Telegram Bot
+    '''
 
-    def __init__(self, token_path=None, name='telegrambot', *argz, **kwz):
+    def __init__(self, token_path=None, name='telegrambot', botmasters=None, *argz, **kwz):
         self.token_path = token_path
         self.token = None
         try:
@@ -28,12 +31,12 @@ class TelegramBot(Daemon):
         self.apiurl = 'https://api.telegram.org/bot' + self.token
         self.last_update_id = 0
         self.last_update_id_file = os.path.abspath('last_update_id.{0}'.format(self.name))
-        self.implemented_commands = ['/help', '/settings', '/start']
-        self.botmasters = ['Borjiviri',]
+        self.implemented_commands = ['/help', '/settings',]
+        self.botmasters = botmasters
         self.logfile = '{0}.log'.format(self.name)
         self.logfile_path = os.path.join(os.getcwd(),self.logfile)
         Logger.add_file_handler(self.logfile_path)
-        Logger.set_verbose('info')
+        Logger.set_verbose('debug')
 
         if not os.path.isfile(self.last_update_id_file):
             logger.error('Creating {0}'.format(self.last_update_id_file))
@@ -60,7 +63,7 @@ class TelegramBot(Daemon):
         user_name = message['from']['first_name']
         text_reply = 'Sorry {0}, I can\'t talk to people'.format(user_name)
         logger.info('Received command from user {0}: {1}'.format(user_name,message['text']))
-        if user_name not in self.botmasters:
+        if self.botmasters is not None and user_name not in self.botmasters:
             text_reply = 'Sorry {0}, I can\'t obey you'.format(user_name)
         else:
             if text not in self.implemented_commands:
@@ -82,7 +85,7 @@ class TelegramBot(Daemon):
         except IOError as e:
             logger.error('Cannot read last_update_id from {0}: ({1}) {2}'.format(self.last_update_id_file,e.errno, e.strerror))
         except ValueError:
-            logger.error('Could not convert last_id data to an integer.')
+            logger.error('Could not convert last_id params to an integer.')
         except:
             logger.error('Unexpected error:', sys.exc_info()[0])
         else:
@@ -136,8 +139,8 @@ class TelegramBot(Daemon):
         params = {'offset': self.last_update_id + 1}
         url = self.apiurl + '/' + method
         req = self._request(url, params)
-        data = req.json()
-        for result in data['result']:
+        params = req.json()
+        for result in params['result']:
             self.write_update_last_id(result['update_id'])
             if result['message']:
                 text = result['message']['text']
