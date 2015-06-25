@@ -65,7 +65,7 @@ class TelegramBot(Daemon):
                 logger.error('Command not implemented: {0}'.format(message['text']))
                 text_reply = 'Command not implemented - Fuck off {0}!'.format(user_name)
             elif text == '/magic':
-                text_reply = 'Fuck yeah!'
+                text_reply = None # 'Fuck yeah!'
                 photo = open(os.path.abspath('/home/borja/repos/telegrambot/data/magic.gif'),'rb')
         logger.debug('Replying to user {0}: {1}'.format(user_name,text_reply))
         self.send_message(chat_id=chat_id, text=text_reply, photo=photo)
