@@ -15,7 +15,7 @@ logger = Logger.logger
 
 class TelegramBot(Daemon):
 
-    def __init__(self, token_path=None, *argz, **kwz):
+    def __init__(self, token_path=None, logfile='telegrambot.log', *argz, **kwz):
         self.token_path = token_path
         self.token = None
         try:
@@ -29,7 +29,7 @@ class TelegramBot(Daemon):
         self.last_update_id_file = os.path.abspath('last_update_id')
         self.implemented_commands = ['/help', '/settings', '/start']
         self.botmasters = ['Borjiviri',]
-        self.logfile = 'telegrambot.log'
+        self.logfile = logfile
         self.logfile_path = os.path.join(os.getcwd(),self.logfile)
         Logger.add_file_handler(self.logfile_path)
         Logger.set_verbose('info')
