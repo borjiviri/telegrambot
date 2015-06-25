@@ -96,16 +96,18 @@ class TelegramBot(Daemon):
             f.close()
             logger.info('Obtained update_id from file {0}: {1}'.format(self.last_update_id_file, self.last_update_id))
 
-    def _request(self, url, params, headers=None, files=None):
+    def _request(self, url, data, headers=None, files=None):
         if headers is None:
             headers = {'content-type': 'application/json'}
+        req = ''
         try:
             if files is None:
-                req = requests.get(url, params=params, headers=headers, timeout=5.0)
+                req = requests.post(url, data=data, headers=headers, timeout=5.0)
             else:
-                headers = {'content-type': 'multipart/form-data'}
-                # req = requests.post(url, params=params, headers=headers, files=files, timeout=5.0)
-                req = requests.post(url, params=params, files=files, timeout=5.0)
+            # if files is not None:
+                #headers = {'content-type': 'multipart/form-data'}
+                req = requests.post(url, data=data, headers=headers, files=files, timeout=60.0)
+                # req = requests.post(url, data=data, files=files, timeout=60.0)
         except requests.ConnectionError:
             logger.error('Connection error')
         except requests.HTTPError:
@@ -116,22 +118,27 @@ class TelegramBot(Daemon):
             logger.error('Too many redirects')
         else:
             logger.debug('Request sent to url: {0}'.format(url))
-            logger.debug('Request sent params: {0}'.format(params))
-        return req
+            logger.debug('Request sent data: {0}'.format(data))
+            return req
 
     def send_message(self, chat_id, text, photo=None):
         method = 'sendMessage'
-        params = {'chat_id': chat_id, 'text': text}
+        data = {'chat_id': chat_id, 'text': text}
         if photo is not None:
             method = 'sendPhoto'
-            params = {'chat_id': chat_id, 'photo': photo, 'caption': text}
+            data = {'chat_id': chat_id, 'photo': photo, 'caption': text}
         url = self.apiurl + '/' + method
-        req = self._request(url, params)
+        req = self._request(url, data)
         logger.debug('Message sent to chat {0}'.format(chat_id))
-        logger.debug('Request params {0}'.format(params))
-        if req.status_code != 200:
-            logger.error('Failed to send message to chat {0}'.format(chat_id))
-            logger.debug('Failed request: \n{0}'.format(req.text))
+        logger.debug('Request data {0}'.format(data))
+        try:
+            if req.status_code != 200:
+                logger.error('Failed to send message to chat {0}'.format(chat_id))
+                logger.debug('Error code: {0}'.format(req.status_code))
+                logger.debug('Failed request: \n{0}'.format(req.text))
+        except:
+            logger.debug('Failed request: none returned')
+
 
     def write_update_last_id(self, last_update_id):
         self.last_update_id = last_update_id
@@ -149,9 +156,9 @@ class TelegramBot(Daemon):
     def get_updates(self):
         logger.info('Getting bot updates')
         method = 'getUpdates'
-        params = {'offset': self.last_update_id + 1}
+        data = {'offset': self.last_update_id + 1}
         url = self.apiurl + '/' + method
-        req = self._request(url, params)
+        req = self._request(url, data)
         data = req.json()
         for result in data['result']:
             self.write_update_last_id(result['update_id'])
