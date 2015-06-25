@@ -15,7 +15,7 @@ logger = Logger.logger
 
 class TelegramBot(Daemon):
 
-    def __init__(self, token_path=None, logfile='telegrambot.log', *argz, **kwz):
+    def __init__(self, token_path=None, name='telegrambot', *argz, **kwz):
         self.token_path = token_path
         self.token = None
         try:
@@ -24,15 +24,21 @@ class TelegramBot(Daemon):
         except IOError as e:
             logger.error('Cannot read token file {0}: ({1}) {2}'.format(self.token_path,e.errno, e.strerror))
 
+        self.name = name
         self.apiurl = 'https://api.telegram.org/bot' + self.token
         self.last_update_id = 0
-        self.last_update_id_file = os.path.abspath('last_update_id')
+        self.last_update_id_file = os.path.abspath('last_update_id.{0}'.format(self.name))
         self.implemented_commands = ['/help', '/settings', '/start']
         self.botmasters = ['Borjiviri',]
-        self.logfile = logfile
+        self.logfile = '{0}.log'.format(self.name)
         self.logfile_path = os.path.join(os.getcwd(),self.logfile)
         Logger.add_file_handler(self.logfile_path)
         Logger.set_verbose('info')
+
+        if not os.path.isfile(self.last_update_id_file):
+            logger.error('Creating {0}'.format(self.last_update_id_file))
+            self.write_update_last_id('0')
+
         super(TelegramBot, self).__init__(*argz, **kwz)
 
     def run(self):
