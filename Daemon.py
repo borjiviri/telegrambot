@@ -39,7 +39,8 @@ class Daemon(object):
             sys.exit(1)
 
         # decouple from parent environment
-        os.chdir('/')
+        # os.chdir('/')         # TODO: chdir to daemon's home directory
+        os.chdir(os.getcwd())   # TODO: chdir to daemon's home directory
         os.setsid()
         os.umask(0)
 
