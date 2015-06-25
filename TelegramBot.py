@@ -14,8 +14,11 @@ from Logger import Logger
 logger = Logger.logger
 
 class TelegramBot(Daemon):
+    '''
+    Telegram Bot
+    '''
 
-    def __init__(self, token_path=None, name='telegrambot', *argz, **kwz):
+    def __init__(self, token_path=None, name='telegrambot', botmasters=None, *argz, **kwz):
         self.token_path = token_path
         self.token = None
         try:
@@ -28,12 +31,12 @@ class TelegramBot(Daemon):
         self.apiurl = 'https://api.telegram.org/bot' + self.token
         self.last_update_id = 0
         self.last_update_id_file = os.path.abspath('last_update_id.{0}'.format(self.name))
-        self.implemented_commands = ['/help', '/settings', '/start']
-        self.botmasters = ['Borjiviri',]
+        self.implemented_commands = ['/help', '/settings', '/start', '/magic']
+        self.botmasters = botmasters
         self.logfile = '{0}.log'.format(self.name)
         self.logfile_path = os.path.join(os.getcwd(),self.logfile)
         Logger.add_file_handler(self.logfile_path)
-        Logger.set_verbose('info')
+        Logger.set_verbose('debug')
 
         if not os.path.isfile(self.last_update_id_file):
             logger.error('Creating {0}'.format(self.last_update_id_file))
@@ -58,16 +61,20 @@ class TelegramBot(Daemon):
         chat_id = message['chat']['id']
         user_id = message['from']['id']
         user_name = message['from']['first_name']
+        photo = None
         text_reply = 'Sorry {0}, I can\'t talk to people'.format(user_name)
         logger.info('Received command from user {0}: {1}'.format(user_name,message['text']))
-        if user_name not in self.botmasters:
+        if self.botmasters is not None and user_name not in self.botmasters:
             text_reply = 'Sorry {0}, I can\'t obey you'.format(user_name)
         else:
             if text not in self.implemented_commands:
                 logger.error('Command not implemented: {0}'.format(message['text']))
                 text_reply = 'Command not implemented - Fuck off {0}!'.format(user_name)
-        self.send_message(chat_id, text_reply)
-        logger.debug('Replying to user {0}: {1}'.format(user_id,text_reply))
+            elif text == '/magic':
+                text_reply = 'Fuck yeah!'
+                photo = open(os.path.abspath('/home/borja/repos/telegrambot/data/magic.gif'),'rb')
+        logger.debug('Replying to user {0}: {1}'.format(user_name,text_reply))
+        self.send_message(chat_id=chat_id, text=text_reply, photo=photo)
 
     def _read_last_update_id(self):
         # with open(self.last_update_id_file, 'r') as f:
@@ -89,10 +96,16 @@ class TelegramBot(Daemon):
             f.close()
             logger.info('Obtained update_id from file {0}: {1}'.format(self.last_update_id_file, self.last_update_id))
 
-    def _request(self, url, params):
-        headers = {'content-type': 'application/json'}
+    def _request(self, url, params, headers=None, files=None):
+        if headers is None:
+            headers = {'content-type': 'application/json'}
         try:
-            req = requests.post(url, params=params, headers=headers, timeout=5.0)
+            if files is None:
+                req = requests.get(url, params=params, headers=headers, timeout=5.0)
+            else:
+                headers = {'content-type': 'multipart/form-data'}
+                # req = requests.post(url, params=params, headers=headers, files=files, timeout=5.0)
+                req = requests.post(url, params=params, files=files, timeout=5.0)
         except requests.ConnectionError:
             logger.error('Connection error')
         except requests.HTTPError:
@@ -102,20 +115,23 @@ class TelegramBot(Daemon):
         except requests.TooManyRedirects:
             logger.error('Too many redirects')
         else:
-            logger.debug('Request sent url:'.format(url))
+            logger.debug('Request sent to url: {0}'.format(url))
             logger.debug('Request sent params: {0}'.format(params))
         return req
 
-    def send_message(self, chat_id, text):
+    def send_message(self, chat_id, text, photo=None):
         method = 'sendMessage'
         params = {'chat_id': chat_id, 'text': text}
+        if photo is not None:
+            method = 'sendPhoto'
+            params = {'chat_id': chat_id, 'photo': photo, 'caption': text}
         url = self.apiurl + '/' + method
         req = self._request(url, params)
         logger.debug('Message sent to chat {0}'.format(chat_id))
-        logger.debug('Message text: {0}'.format(text))
+        logger.debug('Request params {0}'.format(params))
         if req.status_code != 200:
             logger.error('Failed to send message to chat {0}'.format(chat_id))
-            logger.debug('Message text: {0}'.format(text))
+            logger.debug('Failed request: \n{0}'.format(req.text))
 
     def write_update_last_id(self, last_update_id):
         self.last_update_id = last_update_id
@@ -154,5 +170,5 @@ class TelegramBot(Daemon):
                     self._handle_command(result['message'])
                 else:
                     self.send_message(chat_id, text_reply)
-                    logger.debug('Replying to user {0}: {1}'.format(user_id,text_reply))
+                    logger.debug('Replying to user {0}: {1}'.format(user_name,text_reply))
 
