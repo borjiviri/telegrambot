@@ -147,8 +147,8 @@ class TelegramBot(Daemon):
         logger.debug('Message sent to chat {0}'.format(chat_id))
         logger.debug('Message payload: {0}'.format(data))
         try:
-        if req.status_code != 200:
-            logger.error('Failed to send message to chat {0}'.format(chat_id))
+            if req.status_code != 200:
+                logger.error('Failed to send message to chat {0}'.format(chat_id))
                 logger.debug('Error code: {0}'.format(req.status_code))
                 logger.debug('Failed request: \n{0}'.format(req.text))
         except:
