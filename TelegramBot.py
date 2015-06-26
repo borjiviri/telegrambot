@@ -34,6 +34,8 @@ class TelegramBot(Daemon):
         else: f.close()
 
         self.apiurl = 'https://api.telegram.org/bot' + self.token
+        self.first_name = 'null'
+        self.username = 'null'
         self.last_update_id = 0
         self.last_update_id_file = os.path.abspath('last_update_id.{0}'.format(self.name))
         self.implemented_commands = ['/help', '/settings', '/start', '/magic']
@@ -142,6 +144,7 @@ class TelegramBot(Daemon):
         logger.info('Using bot token %s' % self.token)
         logger.info('Forking to the background')
         Logger.remove_console_handler()
+        self._get_myinfo()
         self._read_last_update_id()
         while True:
             self.get_updates()
@@ -183,6 +186,28 @@ class TelegramBot(Daemon):
             logger.error('Unexpected error:', sys.exc_info()[0])
         else:
             f.close()
+
+    def _get_myinfo(self):
+        logger.info('Getting my info')
+        method = 'getMe'
+        url = self.apiurl + '/' + method
+        req = self._request(url, data={}, files=None)
+        data = req.json()
+        try:
+            if req.status_code != 200:
+                logger.error('Failed to get my bot info')
+                logger.debug('Error code: {0}'.format(req.status_code))
+                logger.debug('Failed request: \n{0}'.format(req.text))
+        except:
+            logger.debug('Failed request: none returned')
+        try:
+            self.first_name = data['result']['first_name']
+            self.username = data['result']['username']
+        except:
+            logger.error('LoL! My info is not contained in the HTTP response')
+        else:
+            logger.info('My first_name is "{0}"'.format(self.first_name))
+            logger.info('My username is "{0}"'.format(self.username))
 
     def get_updates(self):
         logger.info('Getting bot updates')
