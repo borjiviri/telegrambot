@@ -171,9 +171,23 @@ class Logger:
 
     next_verbose_level = staticmethod(next_verbose_level)
 
-# =====================================================================================================================
-# XXX Set up logfiles
-# =====================================================================================================================
+    # --------------------------------------------------------------------------------
+
+    def test():
+        Logger.set_verbose('debug')
+        Logger.add_file_handler('./logger.log')
+        Logger.add_error_file_handler('./logger_error.log')
+        Logger.remove_console_handler()
+        logger = Logger.logger
+        logger.debug("un mensaje de debug")
+        logger.info("un mensaje de informacion")
+        logger.warning("un mensaje de aviso")
+        logger.error("un mensaje de error")
+        logger.critical("un mensaje critico")
+
+# =======================================================================================
+# XXX Set up logfiles XXX
+# =======================================================================================
 
 # log_dir = './'
 # logfile_path = '%s/%s.log' % (log_dir,logger_name)
@@ -182,25 +196,5 @@ class Logger:
 # Logger.add_error_file_handler(errfile_path)
 # Logger.remove_console_handler()
 # Logger.set_verbose(default_log_level)
-
-# =====================================================================================================================
-#  MAIN (for testing)
-# =====================================================================================================================
-
-if __name__=='__main__':
-
-    Logger.set_verbose('debug')
-    Logger.add_file_handler('./logger.log')
-    Logger.add_error_file_handler('./logger_error.log')
-    Logger.remove_console_handler()
-
-    logger = Logger.logger
-
-    logger.debug("un mensaje de debug")
-    logger.info("un mensaje de informacion")
-    logger.warning("un mensaje de aviso")
-    logger.error("un mensaje de error")
-    logger.critical("un mensaje critico")
-
 
 # vim:ts=4 sts=4 tw=79 expandtab:
