@@ -2,6 +2,7 @@
 *.token
 *.py[co]
 *.log
+*.lock
 *.orig
 *bot.py
 last_update_id.*
