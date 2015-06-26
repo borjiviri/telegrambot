@@ -5,7 +5,7 @@
 #
 # Use from other classes:
 #
-#   from Logger import Logger
+#   from logger import Logger
 #   logger = Logger.logger
 #
 #   logger.debug("Some debug")
