@@ -2,25 +2,27 @@
 # borja@libcrack.so
 # jue jun 25 20:05:47 CEST 2015
 
-import requests
-import json
 import time
-import sys
-import io
-import os
+import signal
+import lockfile
+import sys, os, io
+import requests, json
+from daemon import daemon
+from twisted.internet import task
+from twisted.internet import reactor
 
-from Daemon import Daemon
-from Logger import Logger
-import Command
+#import logging
+from logger import Logger
+import command
 
 logger = Logger.logger
 
-class TelegramBot(Daemon):
+class TelegramBot(daemon.DaemonContext):
     '''
     Telegram Bot
     '''
-
-    def __init__(self, token_path=None, name='telegrambot', botmasters=None, *argz, **kwz):
+    def __init__(self, name='telegrambot', token_path=None, pidfile=None,
+            logfile=None, updatefile=None, botmasters=None, *argz, **kwz):
         self.name = name
         self.token_path = token_path
         self.botmasters = botmasters
@@ -31,24 +33,65 @@ class TelegramBot(Daemon):
         except IOError as e:
             logger.error('Cannot read token file {0}: ({1}) {2}'.
                     format(self.token_path, e.errno, e.strerror))
+            raise(e)
         else: f.close()
 
         self.apiurl = 'https://api.telegram.org/bot' + self.token
         self.first_name = 'null'
         self.username = 'null'
         self.last_update_id = 0
-        self.last_update_id_file = os.path.abspath('last_update_id.{0}'.format(self.name))
+        self.last_update_id_file = os.path.abspath(
+                'last_update_id.{0}'.format(self.name))
+
+        if updatefile is not None:
+            self.self_last_update_id_file = updatefile
+
+        self.logfile = os.path.join(os.getcwd(),'{0}.log'.format(self.name))
+        if logfile is not None:
+            self.logfile = logfile
+
+        self.pidfile = lockfile.FileLock('/tmp/{0}.pid'.format(self.name))
+        if pidfile is not None:
+            self.pidfile = lockfile.FileLock(pidfile)
+
         self.implemented_commands = ['/help', '/settings', '/start', '/magic']
-        self.logfile = '{0}.log'.format(self.name)
-        self.logfile_path = os.path.join(os.getcwd(),self.logfile)
-        Logger.add_file_handler(self.logfile_path)
+
+        self.sleep_time = 10.0
+        self.task = task.LoopingCall(self.get_updates)
+
+        Logger.add_file_handler(self.logfile)
         Logger.set_verbose('debug')
 
-        if not os.path.isfile(self.last_update_id_file):
-            logger.error('Creating {0}'.format(self.last_update_id_file))
-            self.write_update_last_id('0')
+        # any subclass of StreamHandler should provide the ‘stream’ attribute.
+        # if using import logging
+        # lh = logging.handlers.TimedRotatingFileHandler("/var/log/foo.log",)
+        # or ...
+        # logger = logging.getLogger("DaemonLog")
+        # logger.setLevel(logging.INFO)
+        # formatter = logging.Formatter(
+        #     "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        # lh = logging.FileHandler("log.file")
+        # logger.addHandler(handler)
 
-        super(TelegramBot, self).__init__(*argz, **kwz)
+        ## daemon context
+
+        self.context = daemon.DaemonContext(
+            working_directory = '/tmp',
+            umask = 0o002,
+            pidfile = self.pidfile,
+            files_preserve = [ h.stream for h in Logger.logger.handlers ],
+            #files_preserve = [
+            #   Logger.logger.handlers[0].stream
+            #   ],
+            signal_map = {
+                 signal.SIGTERM: self.program_cleanup,
+                 signal.SIGHUP: 'terminate',
+                 signal.SIGUSR1: self.reload_program_config,
+                 },
+            )
+
+        # self.initial_program_setup()
+        super(self.__class__,self).__init__(*argz, **kwz)
 
     def _handle_command(self, message):
         '''
@@ -101,6 +144,7 @@ class TelegramBot(Daemon):
         except IOError as e:
             logger.error('Cannot read last_update_id from {0}: ({1}) {2}'.
                     format(self.last_update_id_file,e.errno, e.strerror))
+            raise(e)
         except ValueError:
             logger.error('Could not convert last_id data to an integer.')
         except:
@@ -138,21 +182,53 @@ class TelegramBot(Daemon):
             logger.debug('Request data: {0}'.format(data))
         return req
 
-    def run(self):
+    # --- START DAEMON -----------------------------------------------------
+
+    # def initial_program_setup(self):
+    #         pass
+
+    def do_main_program(self):
         '''
-        Implementation of Daemon
+        Implements daemon
         '''
-        sleep_time = 10
-        logger.info('Starting Telegram bot')
-        logger.info('Using bot token %s' % self.token)
-        logger.info('Forking to the background')
-        Logger.remove_console_handler()
-        self._get_myinfo()
+        logger.info('Starting Telegram bot (token={0})'.format(self.token))
+
+        try:
         self._read_last_update_id()
-        while True:
-            self.get_updates()
-            logger.info('Sleeping {0} secs'.format(sleep_time))
-            time.sleep(sleep_time)
+        except IOError:
+        #if not os.path.isfile(self.last_update_id_file):
+            logger.error('Creating {0}'.format(self.last_update_id_file))
+            self.write_update_last_id('0')
+        else:
+            self.task.start(self.sleep_time)
+            reactor.run()
+
+
+    def run(self):
+        ### The following 3 sentences are que equivalent
+        # to the following: "with xxx: do_main_program"
+        # ---------------------------------------------
+        # self.context.__enter__()
+        # try:
+        #     self.do_main_program()
+        # finally:
+        #     self.context.__exit__(None, None, None)
+        # ---------------------------------------------
+        #Logger.remove_console_handler()
+        with self.context:
+            self.do_main_program()
+
+    def program_cleanup(self, signum, frame):
+        logger.info('daemon cleanup: signum={0}, \
+                frame={1}'.format(signum,frame))
+        self.task.stop()
+        self.context.terminate(signum, frame)
+
+    def reload_program_config(self, signum, frame):
+        logger.info('daemon config reload')
+        self.context.terminate(signum, frame)
+
+    # --- END DAEMON -------------------------------------------------------
 
     def send_message(self, chat_id, text, files=None, photo=None):
         method = 'sendMessage'

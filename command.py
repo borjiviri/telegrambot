@@ -7,6 +7,7 @@ import sys
 import inspect
 
 hidden = [ 'BaseCommand', 'ReturnError']
+__all__ = ['help', 'w0w0w0', 'magic']
 
 class ReturnError(Exception):
     def __init__(self, message=None, *args):
