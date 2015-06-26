@@ -3,19 +3,32 @@
 # jue jun 25 20:05:47 CEST 2015
 
 import requests
+#import logging
+import daemon
+import sched
 import json
 import time
 import sys
 import io
 import os
 
-from Daemon import Daemon
+
+from daemon import daemon
+from daemon import runner
+
+from spam import (
+    initial_program_setup,
+    do_main_program,
+    program_cleanup,
+    reload_program_config,
+    )
+
 from Logger import Logger
-import Command
+import command
 
 logger = Logger.logger
 
-class TelegramBot(Daemon):
+class TelegramBot(daemon):
     '''
     Telegram Bot
     '''
@@ -32,21 +45,56 @@ class TelegramBot(Daemon):
             logger.error('Cannot read token file {0}: ({1}) {2}'.
                     format(self.token_path, e.errno, e.strerror))
         else: f.close()
-
         self.apiurl = 'https://api.telegram.org/bot' + self.token
         self.last_update_id = 0
         self.last_update_id_file = os.path.abspath('last_update_id.{0}'.format(self.name))
         self.implemented_commands = ['/help', '/settings', '/start', '/magic']
+
         self.logfile = '{0}.log'.format(self.name)
         self.logfile_path = os.path.join(os.getcwd(),self.logfile)
         Logger.add_file_handler(self.logfile_path)
         Logger.set_verbose('debug')
 
+        # any subclass of StreamHandler should provide the ‘stream’ attribute.
+        # if using import logging
+        # lh = logging.handlers.TimedRotatingFileHandler("/var/log/foo.log",)
+        # or ...
+        # logger = logging.getLogger("DaemonLog")
+        # logger.setLevel(logging.INFO)
+        # formatter = logging.Formatter(
+        #     "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        # lh = logging.FileHandler("log.file")
+        # logger.addHandler(handler)
+
+
         if not os.path.isfile(self.last_update_id_file):
             logger.error('Creating {0}'.format(self.last_update_id_file))
             self.write_update_last_id('0')
 
-        super(TelegramBot, self).__init__(*argz, **kwz)
+        ## daemon stuff
+
+        important_file = open('spam.data', 'w')
+        interesting_file = open('eggs.data', 'w')
+
+        self.context = daemon.DaemonContext(
+            working_directory='/var/lib/foo',
+            umask=0o002,
+            pidfile=lockfile.FileLock('/var/run/spam.pid'),
+            #pidfile=daemon.pidlockfile.TimeoutPIDLockFile('/var/run/daemon.pid', 10)
+            files_preserve = [
+               important_file,
+               interesting_file,
+               lh.stream
+               ],
+           signal_map = {
+                signal.SIGTERM: program_cleanup,
+                signal.SIGHUP: 'terminate',
+                signal.SIGUSR1: reload_program_config,
+                }
+            )
+        initial_program_setup()
+
+        # super(TelegramBot, self).__init__(*argz, **kwz)
 
     def _handle_command(self, message):
         '''
@@ -135,18 +183,30 @@ class TelegramBot(Daemon):
 
     def run(self):
         '''
-        Implementation of Daemon
+        Implements daemon
         '''
         sleep_time = 10
+        priority = 1
         logger.info('Starting Telegram bot')
         logger.info('Using bot token %s' % self.token)
         logger.info('Forking to the background')
         Logger.remove_console_handler()
         self._read_last_update_id()
+
+        # scheduler = sched.scheduler(time.time, time.sleep)
+        # # scheduler.enter(sleep_time, priority, self.get_updates, kwargs={'a': 'keyword'})
+        # scheduler.enter(sleep_time, priority, self.get_updates)
+        # scheduler.run()
+        # # scheduler.cancel(event)   # remove element from queue
+
         while True:
             self.get_updates()
             logger.info('Sleeping {0} secs'.format(sleep_time))
             time.sleep(sleep_time)
+
+        with self.context:
+            #self.start()
+            do_main_program()
 
     def send_message(self, chat_id, text, files=None, photo=None):
         method = 'sendMessage'
