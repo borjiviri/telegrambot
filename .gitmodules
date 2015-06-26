@@ -1,3 +1,6 @@
 [submodule "python-daemon"]
 	path = python-daemon
 	url = https://github.com/serverdensity/python-daemon.git
+[submodule "daemonocle"]
+	path = daemonocle
+	url = https://github.com/jnrbsn/daemonocle.git
