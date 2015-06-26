@@ -13,6 +13,7 @@ import io
 import os
 
 
+from daemon import DaemonContext
 from daemon import daemon
 from daemon import runner
 
@@ -32,7 +33,6 @@ class TelegramBot(daemon):
     '''
     Telegram Bot
     '''
-
     def __init__(self, token_path=None, name='telegrambot', botmasters=None, *argz, **kwz):
         self.name = name
         self.token_path = token_path
@@ -269,4 +269,25 @@ class TelegramBot(daemon):
                 else:
                     self.send_message(chat_id, text_reply)
                     logger.debug('Replying to user {0}: {1}'.format(user_name,text_reply))
+
+    ##
+    ## daemon.daemon implementation
+    ##
+    def initial_program_setup(self):
+            logger.info('daemon started')
+
+    def do_main_program(self):
+        while True:
+            time.sleep(1)
+            logger.info('another second passed')
+
+    def program_cleanup(self, signum, frame):
+        logger.info('daemon stops')
+        context.terminate(signum, frame)
+
+    def reload_program_config(self, signum, frame):
+        logger.info('reloading config')
+
+
+
 

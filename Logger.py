@@ -1,5 +1,5 @@
 # no shebang here
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 # Static class for logging purposes
 #
