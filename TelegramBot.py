@@ -194,7 +194,7 @@ class TelegramBot(daemon.DaemonContext):
         logger.info('Starting Telegram bot (token={0})'.format(self.token))
 
         try:
-        self._read_last_update_id()
+            self._read_last_update_id()
         except IOError:
         #if not os.path.isfile(self.last_update_id_file):
             logger.error('Creating {0}'.format(self.last_update_id_file))
