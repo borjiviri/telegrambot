@@ -2,7 +2,12 @@
 
 from TelegramBot import TelegramBot
 
-telegrambot = TelegramBot('./telegrambot.token',
-        name='telegrambot', pidfile='/tmp/telegrambot.pid')
-telegrambot.start()
+telegrambot = TelegramBot(
+            name = 'telegrambot',
+            pidfile = './data/telegrambot.pid',
+            logfile = './data/telegrambot.log',
+            updatefile = './data/last_update_id.telegrambot',
+            token_path = './data/telegrambot.token',
+            )
+telegrambot.run()
 
