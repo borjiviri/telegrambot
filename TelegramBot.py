@@ -86,7 +86,6 @@ class TelegramBot(daemon.DaemonContext):
                  signal.SIGTERM: self.program_cleanup,
                  signal.SIGHUP: 'terminate',
                  signal.SIGUSR1: self.reload_program_config,
-                 signal.SIGUSR2: self.reload_program_config,
                  },
             )
 
@@ -288,7 +287,4 @@ class TelegramBot(daemon.DaemonContext):
                 else:
                     self.send_message(chat_id, text_reply)
                     logger.debug('Replying to user {0}: {1}'.format(user_name,text_reply))
-
-
-
 
