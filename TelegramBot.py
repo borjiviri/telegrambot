@@ -22,11 +22,12 @@ class TelegramBot(daemon.DaemonContext):
     Telegram Bot
     '''
     def __init__(self, name='telegrambot', token_path=None, pidfile=None,
-            logfile=None, updatefile=None, botmasters=None, *argz, **kwz):
+            logfile=None, updatefile=None, botmasters=None):
         self.name = name
         self.token_path = token_path
         self.botmasters = botmasters
         self.token = None
+
         try:
             f = open(self.token_path,'r')
             self.token = f.readline().strip()
@@ -40,27 +41,42 @@ class TelegramBot(daemon.DaemonContext):
         self.first_name = 'null'
         self.username = 'null'
         self.last_update_id = 0
-        self.last_update_id_file = os.path.abspath(
-                'last_update_id.{0}'.format(self.name))
 
-        if updatefile is not None:
-            self.self_last_update_id_file = updatefile
+        logger.debug('1: updatefile=%s' % updatefile)
+        logger.debug('1: logfile=%s' % logfile)
+        logger.debug('1: pidfile=%s' % pidfile)
 
-        self.logfile = os.path.join(os.getcwd(),'{0}.log'.format(self.name))
+        self.last_update_id_file = os.path.join(os.getcwd(),'last_update_id.{0}'.format(self.name))
+        #self.last_update_id_file = ''
+        #if updatefile == None:
+        #    self.last_update_id_file = os.path.join(
+        #            os.getcwd(),'last_update_id.{0}'.format(self.name))
+        #else:
+        #    self.self_last_update_id_file = os.path.realpath(updatefile)
+
+        self.logfile = ''
         if logfile is not None:
-            self.logfile = logfile
+            self.logfile = os.path.realpath(logfile)
+        else:
+            self.logfile = os.path.join(os.getcwd(),'{0}.log'.format(self.name))
 
-        self.pidfile = lockfile.FileLock('/tmp/{0}.pid'.format(self.name))
+        Logger.add_file_handler(self.logfile)
+        Logger.set_verbose('debug')
+
+        self.pidfile = ''
         if pidfile is not None:
-            self.pidfile = lockfile.FileLock(pidfile)
+            self.pidfile = os.path.realpath(pidfile)
+        else:
+            self.pidfile = os.path.join(os.getcwd(),'{0}.pid'.format(self.name))
+
+        logger.debug('2: self.last_update_id_file=%s' % self.last_update_id_file)
+        logger.debug('2: self.logfile=%s' % self.logfile)
+        logger.debug('2: self.pidfile=%s' % self.pidfile)
 
         self.implemented_commands = ['/help', '/settings', '/start', '/magic']
 
         self.sleep_time = 10.0
         self.task = task.LoopingCall(self.get_updates)
-
-        Logger.add_file_handler(self.logfile)
-        Logger.set_verbose('debug')
 
         # any subclass of StreamHandler should provide the ‘stream’ attribute.
         # if using import logging
@@ -78,7 +94,7 @@ class TelegramBot(daemon.DaemonContext):
         self.context = daemon.DaemonContext(
             working_directory = '/tmp',
             umask = 0o002,
-            pidfile = self.pidfile,
+            pidfile = lockfile.FileLock(self.pidfile),
             files_preserve = [ h.stream for h in Logger.logger.handlers ],
             #files_preserve = [
             #   Logger.logger.handlers[0].stream
@@ -91,7 +107,8 @@ class TelegramBot(daemon.DaemonContext):
             )
 
         # self.initial_program_setup()
-        super(self.__class__,self).__init__(*argz, **kwz)
+        # super(self.__class__,self).__init__(*argz, **kwz)
+        # super(self.__class__,self).__init__()
 
     def _handle_command(self, message):
         '''
