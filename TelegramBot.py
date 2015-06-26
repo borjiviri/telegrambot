@@ -6,10 +6,12 @@ import requests
 import json
 import time
 import sys
+import io
 import os
 
 from Daemon import Daemon
 from Logger import Logger
+import Command
 
 logger = Logger.logger
 
@@ -53,21 +55,33 @@ class TelegramBot(Daemon):
         photo = None
         files = None
         text = message['text']
+        command = text.strip('/')
         chat_id = message['chat']['id']
         user_id = message['from']['id']
         user_name = message['from']['first_name']
+        logger.info('Received command from user {0}: {1}'.format(user_name,command))
         text_reply = 'Sorry {0}, I can\'t talk to people'.format(user_name)
-        logger.info('Received command from user {0}: {1}'.format(user_name,message['text']))
         if self.botmasters is not None and user_name not in self.botmasters:
             text_reply = 'Sorry {0}, I can\'t obey you'.format(user_name)
         else:
-            if text not in self.implemented_commands:
-                logger.error('Command not implemented: {0}'.format(message['text']))
-                text_reply = 'Command not implemented - Fuck off {0}!'.format(user_name)
-            elif text == '/magic':
-                text_reply = None # 'Fuck yeah!'
-                photo = open(os.path.abspath('/home/borja/repos/telegrambot/data/magic.gif'),'rb')
-        logger.debug('Replying to user {0}: {1}'.format(user_name,text_reply))
+            try:
+                method_to_call = getattr(Command,command)
+                result = method_to_call.execute()
+                if isinstance(result, str):
+                    text_reply = result
+                elif isinstance(result, io.BufferedReader):
+                    photo = result
+                    text_reply = None
+                elif result is None:
+                    text_reply = 'Command "{0}" executed successfully'.format(command)
+                else:
+                    raise Command.ReturnError()
+            except AttributeError:
+                text_reply = 'Command "{0}" not implemented'.format(command)
+                logger.error(text_reply)
+            except Command.ReturnError as e:
+                text_reply = 'Failed to execute command "{0}": {1}'.format(command,e.message)
+                logger.error(text_reply)
         self.send_message(chat_id=chat_id, text=text_reply, photo=photo)
 
     def _read_last_update_id(self):
