@@ -58,6 +58,9 @@ class TelegramBot(Daemon):
         files = None
         text = message['text']
         command = text.strip('/')
+        if command.find('@{0}'.format(self.username)) > 0:
+            logger.info('Detected directed command to myself')
+            command = command.split('@')[0]
         chat_id = message['chat']['id']
         user_id = message['from']['id']
         user_name = message['from']['first_name']
