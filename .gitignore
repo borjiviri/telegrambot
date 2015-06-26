@@ -2,6 +2,8 @@
 *.token
 *.py[co]
 *.log
-last_update_id
+*.orig
+*bot.py
+last_update_id.*
 notes
 lib
