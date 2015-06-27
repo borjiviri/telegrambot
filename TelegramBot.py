@@ -22,7 +22,7 @@ class TelegramBot(daemon.DaemonContext):
     Telegram Bot
     '''
     def __init__(self, name='telegrambot', token_path=None, pidfile=None,
-            logfile=None, updatefile=None, botmasters=None):
+            logfile=None, updatefile=None, botmasters=None, *argz, **kwz):
         self.name = name
         self.token_path = token_path
         self.botmasters = botmasters
@@ -41,10 +41,6 @@ class TelegramBot(daemon.DaemonContext):
         self.first_name = 'null'
         self.username = 'null'
         self.last_update_id = 0
-
-        logger.debug('1: updatefile=%s' % updatefile)
-        logger.debug('1: logfile=%s' % logfile)
-        logger.debug('1: pidfile=%s' % pidfile)
 
         self.last_update_id_file = os.path.join(os.getcwd(),'last_update_id.{0}'.format(self.name))
         #self.last_update_id_file = ''
@@ -69,9 +65,12 @@ class TelegramBot(daemon.DaemonContext):
         else:
             self.pidfile = os.path.join(os.getcwd(),'{0}.pid'.format(self.name))
 
-        logger.debug('2: self.last_update_id_file=%s' % self.last_update_id_file)
-        logger.debug('2: self.logfile=%s' % self.logfile)
-        logger.debug('2: self.pidfile=%s' % self.pidfile)
+        logger.debug('updatefile=%s' % updatefile)
+        logger.debug('logfile=%s' % logfile)
+        logger.debug('pidfile=%s' % pidfile)
+        logger.debug('self.last_update_id_file=%s' % self.last_update_id_file)
+        logger.debug('self.logfile=%s' % self.logfile)
+        logger.debug('self.pidfile=%s' % self.pidfile)
 
         self.implemented_commands = ['/help', '/settings', '/start', '/magic']
 
@@ -92,10 +91,10 @@ class TelegramBot(daemon.DaemonContext):
         ## daemon context
 
         self.context = daemon.DaemonContext(
-            working_directory = '/tmp',
+            working_directory = os.getcwd(),
             umask = 0o002,
-            pidfile = lockfile.FileLock(self.pidfile),
-            files_preserve = [ h.stream for h in Logger.logger.handlers ],
+            pidfile = self.pidfile,
+            files_preserve = [h.stream for h in Logger.logger.handlers],
             #files_preserve = [
             #   Logger.logger.handlers[0].stream
             #   ],
