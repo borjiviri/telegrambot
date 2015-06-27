@@ -76,10 +76,10 @@ class TelegramBot(daemon.DaemonContext):
         ## daemon context
 
         self.context = daemon.DaemonContext(
-            working_directory = '/tmp',
+            working_directory = os.getcwd(),
             umask = 0o002,
             pidfile = self.pidfile,
-            files_preserve = [ h.stream for h in Logger.logger.handlers ],
+            files_preserve = [h.stream for h in Logger.logger.handlers],
             #files_preserve = [
             #   Logger.logger.handlers[0].stream
             #   ],
