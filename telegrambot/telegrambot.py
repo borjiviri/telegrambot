@@ -71,11 +71,8 @@ class TelegramBot(daemon.DaemonContext):
         self.context = daemon.DaemonContext(
             working_directory=self.working_directory,
             umask=0o002,
-            pidfile=self.pidfile,
+            pidfile=lockfile.FileLock(self.pidfile),
             files_preserve=[h.stream for h in Logger.logger.handlers],
-            # files_preserve = [
-            #   Logger.logger.handlers[0].stream
-            #   ],
             signal_map={
                 signal.SIGTERM: self.program_cleanup,
                 signal.SIGHUP: 'terminate',
@@ -94,22 +91,22 @@ class TelegramBot(daemon.DaemonContext):
             message (dict): the received JSON message command
         Raises:
             AttributeError: if the message text is not an implemented command
-            Command.ReturnError: if the command execution failed
+            command.ReturnError: if the command execution failed
         '''
         photo = None
         files = None
         text = message['text']
-        command = text.strip('/')
-        if command.find('@{0}'.format(self.username)) > 0:
+        cmd = text.strip('/')
+        if cmd.find('@{0}'.format(self.username)) > 0:
             logger.info('Detected directed command to myself')
-            command = command.split('@')[0]
+            cmd = cmd.split('@')[0]
         chat_id = message['chat']['id']
         user_id = message['from']['id']
         user_name = message['from']['first_name']
         logger.info(
             'Received command from user {0}: {1}'.format(
                 user_name,
-                command))
+                cmd))
         text_reply = 'Sorry {0}, I can\'t talk to people'.format(user_name)
         if self.botmasters and user_name not in self.botmasters:
             text_reply = 'Sorry {0}, I can\'t obey you. '.format(user_name)
@@ -118,7 +115,7 @@ class TelegramBot(daemon.DaemonContext):
                     self.botmasters))
         else:
             try:
-                method_to_call = getattr(Command, command)
+                method_to_call = getattr(command, cmd)
                 result = method_to_call.execute()
                 if isinstance(result, str):
                     text_reply = result
@@ -127,15 +124,15 @@ class TelegramBot(daemon.DaemonContext):
                     text_reply = None
                 elif result is None:
                     text_reply = 'Command "{0}" executed successfully'.format(
-                        command)
+                        cmd)
                 else:
                     raise Command.ReturnError()
             except AttributeError:
-                text_reply = 'Command "{0}" not implemented'.format(command)
+                text_reply = 'Command "{0}" not implemented'.format(cmd)
                 logger.error(text_reply)
             except Command.ReturnError as e:
                 text_reply = 'Failed to execute command "{0}": {1}'.format(
-                    command,
+                    cmd,
                     e.message)
                 logger.error(text_reply)
         self.send_message(
@@ -248,7 +245,7 @@ class TelegramBot(daemon.DaemonContext):
         try:
             f = open(self.config_path, 'r+')
             content = f.read()
-            replaced = re.sub(r'update_id\s*=\s*\d',
+            replaced = re.sub(r'update_id\s*=\s*\d+',
                               'update_id = {0}'.format(update_id), content)
             f.seek(0)
             f.write(replaced)
