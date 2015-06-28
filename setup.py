@@ -16,13 +16,13 @@ def read(relpath):
     '''
     cwd = os.path.dirname(__file__)
     abspath = os.path.join(cwd,
-            os.path.normpath(relpath))
+                           os.path.normpath(relpath))
     with open(abspath) as f:
         return f.read()
 
 NAME = 'dswx-docx'
 VERSION = re.search("__version__ = '([^']+)'",
-        read('telegram/__init__.py')).group(1)
+                    read('telegram/__init__.py')).group(1)
 #VERSION = read('VERSION').strip()
 DESCRIPTION = 'Telegram Bot module.'
 KEYWORDS = 'telegram bot'
@@ -37,7 +37,7 @@ INSTALL_REQUIRES = [
     'python-daemon',
     'requests',
     'twisted',
-    ]
+]
 #TEST_SUITE = 'tests'
 #TESTS_REQUIRE = ['behave', 'mock', 'pyparsing', 'pytest']
 LONG_DESC = read('README.md') + '\n\n' + read('CHANGES')
@@ -47,7 +47,7 @@ PY_MODULES = [
     'telegrambot/console',
     'telegrambot/logger',
     'telegrambot/telegrambot',
-    ]
+]
 PROVIDES = ['telegrambot']
 
 CLASSIFIERS = [
@@ -65,26 +65,26 @@ CLASSIFIERS = [
 ]
 
 PARAMS = {
-    'platforms':        PLATFORMS,
-    'name':             NAME,
-    'version':          VERSION,
-    'description':      DESCRIPTION,
-    'keywords':         KEYWORDS,
+    'platforms': PLATFORMS,
+    'name': NAME,
+    'version': VERSION,
+    'description': DESCRIPTION,
+    'keywords': KEYWORDS,
     'long_description': LONG_DESC,
-    'author':           AUTHOR,
-    'author_email':     AUTHOR_EMAIL,
-    'url':              URL,
-    'license':          LICENSE,
-    'packages':         PACKAGES,
-    'package_dir':      PACKAGE_DIR,
-    'package_data':     PACKAGE_DATA,
-    'py_modules':       PY_MODULES,
-    'provides':         PROVIDES,
-    'requires':         INSTALL_REQUIRES,
+    'author': AUTHOR,
+    'author_email': AUTHOR_EMAIL,
+    'url': URL,
+    'license': LICENSE,
+    'packages': PACKAGES,
+    'package_dir': PACKAGE_DIR,
+    'package_data': PACKAGE_DATA,
+    'py_modules': PY_MODULES,
+    'provides': PROVIDES,
+    'requires': INSTALL_REQUIRES,
     'install_requires': INSTALL_REQUIRES,
     #'tests_require':    TESTS_REQUIRE,
     #'test_suite':       TEST_SUITE,
-    'classifiers':      CLASSIFIERS,
+    'classifiers': CLASSIFIERS,
 }
 
 setup(**PARAMS)

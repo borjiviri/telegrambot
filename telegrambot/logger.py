@@ -14,13 +14,15 @@ logger_name = 'telegrambot'
 # default_log_level = 'debug'
 default_log_level = 'info'
 
+
 class Logger:
 
     logger = logging.getLogger(logger_name)
     logger.setLevel(logging.INFO)
 
     DEFAULT_FORMAT = '%(asctime)s %(module)s [%(levelname)s]: %(message)s'
-    SYSLOG_FORMAT = logger_name + ': %(asctime)s %(module)s [%(levelname)s]: %(message)s'
+    SYSLOG_FORMAT = logger_name + \
+        ': %(asctime)s %(module)s [%(levelname)s]: %(message)s'
     __formatter = logging.Formatter(DEFAULT_FORMAT)
     __streamhandler = None
 
@@ -42,9 +44,11 @@ class Logger:
             it will be permanently removed.
         """
         for handler in Logger.logger.handlers:
-            if isinstance(handler,logging.FileHandler):
+            if isinstance(handler, logging.FileHandler):
                 if handler.baseFilename and handler.baseFilename == filepath:
-                    print ("Logger: removing handler for %s" % handler.baseFilename)
+                    print(
+                        "Logger: removing handler for %s" %
+                        handler.baseFilename)
                     Logger.logger.removeHandler(handler)
 
     remove_file_handler = staticmethod(remove_file_handler)
@@ -72,18 +76,18 @@ class Logger:
             try:
                 os.makedirs(dir, 0o0755)
             except OSError as e:
-                print ("Logger: Error adding file handler,", \
-                    "can not create log directory (%s): %s" % (dir, e))
+                print("Logger: Error adding file handler,",
+                      "can not create log directory (%s): %s" % (dir, e))
                 return
 
         try:
             handler = logging.FileHandler(file)
         except IOError as e:
-            print ("Logger: Error adding file handler: %s" % (e))
+            print("Logger: Error adding file handler: %s" % (e))
             return
 
         handler.setFormatter(Logger.__formatter)
-        if log_level: # modify log_level
+        if log_level:  # modify log_level
             handler.setLevel(log_level)
         Logger.logger.addHandler(handler)
 
@@ -97,7 +101,6 @@ class Logger:
             Logger.set_verbose(log_level)
 
     add_file_handler = staticmethod(add_file_handler)
-
 
     # --------------------------------------------------------------------------------
 
@@ -125,7 +128,7 @@ class Logger:
 
     # --------------------------------------------------------------------------------
 
-    def set_verbose (verbose = 'info'):
+    def set_verbose(verbose='info'):
         """
         Show DEBUG messages or not
         modifying the global (logger, not handler) threshold level
@@ -153,7 +156,7 @@ class Logger:
             index = levels.index(verbose)
 
             if index > 0:
-                return levels[index-1]
+                return levels[index - 1]
 
         return verbose
 

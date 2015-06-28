@@ -25,9 +25,11 @@ logger = Logger.logger
 
 
 class TelegramBot(daemon.DaemonContext):
+
     '''
     Telegram Bot
     '''
+
     def __init__(self, config_path=None):
         '''
         TelegramBot class constructor
@@ -72,15 +74,15 @@ class TelegramBot(daemon.DaemonContext):
             umask=0o002,
             pidfile=self.pidfile,
             files_preserve=[h.stream for h in Logger.logger.handlers],
-            #files_preserve = [
+            # files_preserve = [
             #   Logger.logger.handlers[0].stream
             #   ],
             signal_map={
                 signal.SIGTERM: self.program_cleanup,
                 signal.SIGHUP: 'terminate',
                 signal.SIGUSR1: self.reload_program_config,
-                },
-            )
+            },
+        )
 
         # self.initial_program_setup()
         # super(self.__class__,self).__init__()
@@ -105,14 +107,19 @@ class TelegramBot(daemon.DaemonContext):
         chat_id = message['chat']['id']
         user_id = message['from']['id']
         user_name = message['from']['first_name']
-        logger.info('Received command from user {0}: {1}'.format(user_name,command))
+        logger.info(
+            'Received command from user {0}: {1}'.format(
+                user_name,
+                command))
         text_reply = 'Sorry {0}, I can\'t talk to people'.format(user_name)
         if self.botmasters and user_name not in self.botmasters:
             text_reply = 'Sorry {0}, I can\'t obey you. '.format(user_name)
-            text_reply += 'My botmasters are: '.format(', '.join(self.botmasters))
+            text_reply += 'My botmasters are: '.format(
+                ', '.join(
+                    self.botmasters))
         else:
             try:
-                method_to_call = getattr(Command,command)
+                method_to_call = getattr(Command, command)
                 result = method_to_call.execute()
                 if isinstance(result, str):
                     text_reply = result
@@ -120,16 +127,23 @@ class TelegramBot(daemon.DaemonContext):
                     photo = result
                     text_reply = None
                 elif result is None:
-                    text_reply = 'Command "{0}" executed successfully'.format(command)
+                    text_reply = 'Command "{0}" executed successfully'.format(
+                        command)
                 else:
                     raise Command.ReturnError()
             except AttributeError:
                 text_reply = 'Command "{0}" not implemented'.format(command)
                 logger.error(text_reply)
             except Command.ReturnError as e:
-                text_reply = 'Failed to execute command "{0}": {1}'.format(command,e.message)
+                text_reply = 'Failed to execute command "{0}": {1}'.format(
+                    command,
+                    e.message)
                 logger.error(text_reply)
-        self.send_message(chat_id=chat_id, text=text_reply, files=files, photo=photo)
+        self.send_message(
+            chat_id=chat_id,
+            text=text_reply,
+            files=files,
+            photo=photo)
 
     def _read_config(self):
         '''
@@ -147,11 +161,13 @@ class TelegramBot(daemon.DaemonContext):
         ]
         avoid = ['no', 'none', 'false', 'null']
 
-        logger.info ('Reading config file: {0}'.format(self.config_path))
+        logger.info('Reading config file: {0}'.format(self.config_path))
         try:
-            config = open(self.config_path,'r')
+            config = open(self.config_path, 'r')
         except IOError as e:
-            logger.error ('Error opening file {0} : ({1})' % (self.config_path,e))
+            logger.error(
+                'Error opening file {0} : ({1})' %
+                (self.config_path, e))
             raise (e)
 
         pattern = re.compile('^(\S+?)\s*=\s*(.+)\s*$')
@@ -161,23 +177,27 @@ class TelegramBot(daemon.DaemonContext):
             if result is not None:
                 (key, value) = result.groups()
                 self.config[key] = value
-                logger.debug('Config option {0}={1}'.format(key,value))
+                logger.debug('Config option {0}={1}'.format(key, value))
         config.close()
 
         for item in mandatory_options:
             if item not in self.config.keys():
                 logger.error('Missing mandatory config option "{0}" in {1}'.
-                    format(item,self.config_path))
+                             format(item, self.config_path))
                 raise ValueError
 
         if 'loglevel' not in self.config.keys():
             Logger.set_verbose('info')
-            logger.info('loglevel not declared in {0}'.format(self.config_path))
+            logger.info(
+                'loglevel not declared in {0}'.format(
+                    self.config_path))
             logger.info('using loglevel = info'.format(os.getcwd()))
             self.config['loglevel'] = 'info'
 
         if 'working_directory' not in self.config.keys():
-            logger.info('working_directory not declared in {0}'.format(self.config_path))
+            logger.info(
+                'working_directory not declared in {0}'.format(
+                    self.config_path))
             logger.info('using working_directory = {0}'.format(os.getcwd()))
             self.config['working_directory'] = os.getcwd()
         elif self.config['working_directory'] in avoid:
@@ -185,17 +205,23 @@ class TelegramBot(daemon.DaemonContext):
             self.config['working_directory'] = os.getcwd()
 
         if 'update_id' not in self.config.keys():
-            logger.info('update_id not declared in {0}'.format(self.config_path))
+            logger.info(
+                'update_id not declared in {0}'.format(
+                    self.config_path))
             logger.info('using update_id = 0')
             self.config['update_id'] = 0
 
         if 'botmasters' not in self.config.keys():
-            logger.info('botmasters not declared in {0}'.format(self.config_path))
+            logger.info(
+                'botmasters not declared in {0}'.format(
+                    self.config_path))
             logger.info('using NO (botmasters = )')
             self.config['botmasters'] = None
             self.botmasters = None
         elif self.config['botmasters'] in avoid:
-            logger.info('using NO (botmasters = {0})'.format(self.config['botmasters']))
+            logger.info(
+                'using NO (botmasters = {0})'.format(
+                    self.config['botmasters']))
             self.config['botmasters'] = None
             self.botmasters = None
         else:
@@ -219,7 +245,7 @@ class TelegramBot(daemon.DaemonContext):
             update_id (int): Telegram last received message id
         '''
         logger.info('Writting update_id {0} to file {1}'.
-                format(update_id, self.config_path))
+                    format(update_id, self.config_path))
         try:
             f = open(self.config_path, 'r+')
             content = f.read()
@@ -282,8 +308,7 @@ class TelegramBot(daemon.DaemonContext):
         else:
             return req.json()
 
-
-    ## START DAEMON IMPLEMENTATION ============================================
+    # START DAEMON IMPLEMENTATION ============================================
 
     # def initial_program_setup(self):
     #         pass
@@ -299,7 +324,7 @@ class TelegramBot(daemon.DaemonContext):
     def run(self):
         with self.context:
             self.do_main_program()
-        ### The following 3 sentences are que equivalent
+        # The following 3 sentences are que equivalent
         # to the above one: "with xxx: do_main_program"
         # ---------------------------------------------
         # self.context.__enter__()
@@ -308,7 +333,7 @@ class TelegramBot(daemon.DaemonContext):
         # finally:
         #     self.context.__exit__(None, None, None)
         # ---------------------------------------------
-        #Logger.remove_console_handler()
+        # Logger.remove_console_handler()
 
     def program_cleanup(self, signum, frame):
         '''
@@ -319,7 +344,7 @@ class TelegramBot(daemon.DaemonContext):
             frame: signal frame
         '''
         logger.info('daemon cleanup: signum={0}, \
-                frame={1}'.format(signum,frame))
+                frame={1}'.format(signum, frame))
         self.task.stop()
         self.context.terminate(signum, frame)
 
@@ -332,12 +357,12 @@ class TelegramBot(daemon.DaemonContext):
             frame: signal frame
         '''
         logger.info('daemon config reload: signum={0}, \
-                frame={1}'.format(signum,frame))
+                frame={1}'.format(signum, frame))
         self._read_config()
 
-    ## END DAEMON IMPLEMENTATION ==============================================
+    # END DAEMON IMPLEMENTATION ==============================================
 
-    ## START TELEGRAM API IMPLEMENTATION ======================================
+    # START TELEGRAM API IMPLEMENTATION ======================================
 
     def send_message(self, chat_id, text, files=None, photo=None):
         method = 'sendMessage'
@@ -383,7 +408,8 @@ class TelegramBot(daemon.DaemonContext):
         method = 'getUpdates'
         url = self.apiurl + '/' + method
         data = {'offset': self.update_id + 1}
-        if self.update_id == 0: data = None
+        if self.update_id == 0:
+            data = None
         json_data = self._request(url, data=data)
         for result in json_data['result']:
             self._write_update_id(result['update_id'])
@@ -392,16 +418,23 @@ class TelegramBot(daemon.DaemonContext):
                 chat_id = result['message']['chat']['id']
                 user_id = result['message']['from']['id']
                 user_name = result['message']['from']['first_name']
-                text_reply = 'Sorry {0}, I can\'t talk to people'.format(user_name)
+                text_reply = 'Sorry {0}, I can\'t talk to people'.format(
+                    user_name)
                 try:
                     chat_title = result['message']['chat']['title']
                 except:
                     chat_title = 'null'
-                logger.debug('Received message from user {0}: {1}'.format(user_name,text))
+                logger.debug(
+                    'Received message from user {0}: {1}'.format(
+                        user_name,
+                        text))
                 if text.startswith('/'):
                     self._handle_command(result['message'])
                 else:
                     self.send_message(chat_id, text_reply)
-                    logger.debug('Replying to user {0}: {1}'.format(user_name,text_reply))
+                    logger.debug(
+                        'Replying to user {0}: {1}'.format(
+                            user_name,
+                            text_reply))
 
-    ## END TELEGRAM API IMPLEMENTATION ========================================
+    # END TELEGRAM API IMPLEMENTATION ========================================

@@ -6,10 +6,13 @@ from code import InteractiveConsole
 from imp import new_module
 import os
 
+
 class Console(InteractiveConsole):
+
     '''
     Interactive Python interpreter console.
     '''
+
     def __init__(self, names=None):
         names = names or {}
         names['console'] = self
@@ -27,9 +30,9 @@ class Console(InteractiveConsole):
     def test_interact(self,):
         return self.interact()
 
-    def test_execute(self,script='cvss.py'):
-        with open (
-                os.path.realpath(script),'r'
-            ) as f: self.enter(
-                    ''.join(f.readlines()))
-
+    def test_execute(self, script='cvss.py'):
+        with open(
+            os.path.realpath(script), 'r'
+        ) as f:
+            self.enter(
+                ''.join(f.readlines()))
