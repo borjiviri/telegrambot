@@ -4,6 +4,7 @@
 
 import requests
 import lockfile
+import logging
 import signal
 import time
 import json
@@ -61,6 +62,8 @@ class TelegramBot(daemon.DaemonContext):
         # reads and sets all the above object attributes
         self._read_config()
 
+        logger.info('Starting Telegram bot (token={0})'.format(self.token))
+
         # get self.username & self.first_name performing a getMe API call
         self.get_me()
 
@@ -72,7 +75,7 @@ class TelegramBot(daemon.DaemonContext):
             working_directory=self.working_directory,
             umask=0o002,
             pidfile=lockfile.FileLock(self.pidfile),
-            files_preserve=[h.stream for h in Logger.logger.handlers],
+            files_preserve=[h.stream for h in logger.handlers],
             signal_map={
                 signal.SIGTERM: self.program_cleanup,
                 signal.SIGHUP: 'terminate',
@@ -80,12 +83,9 @@ class TelegramBot(daemon.DaemonContext):
             },
         )
 
-        # self.initial_program_setup()
-        # super(self.__class__,self).__init__()
-
     def _handle_command(self, message):
         '''
-        Handler for commands sent to the bot in the form of "/command arg1 arg2 ..."
+        Handler for commands sent to the bot in the form of "/command arg1 ..."
 
         Args:
             message (dict): the received JSON message command
@@ -147,7 +147,7 @@ class TelegramBot(daemon.DaemonContext):
 
         Raises:
             IOError: if self.config_path does not exists
-            ValueError: if self.config_path does not include all the mandatory options
+            ValueError: if self.config_path does not include all mandatory opt
         '''
         mandatory_options = [
             'token',
@@ -169,11 +169,12 @@ class TelegramBot(daemon.DaemonContext):
         pattern = re.compile('^(\S+?)\s*=\s*(.+)\s*$')
 
         for line in config:
-            result = pattern.match(line)
-            if result is not None:
-                (key, value) = result.groups()
-                self.config[key] = value
-                logger.debug('Config option {0}={1}'.format(key, value))
+            if not line.startswith('#'):
+                result = pattern.match(line)
+                if result is not None:
+                    (key, value) = result.groups()
+                    self.config[key] = value
+                    logger.debug('Config option {0}={1}'.format(key, value))
         config.close()
 
         for item in mandatory_options:
@@ -183,11 +184,8 @@ class TelegramBot(daemon.DaemonContext):
                 raise ValueError
 
         if 'loglevel' not in self.config.keys():
-            Logger.set_verbose('info')
-            logger.info(
-                'loglevel not declared in {0}'.format(
-                    self.config_path))
-            logger.info('using loglevel = info'.format(os.getcwd()))
+            logger.info('loglevel not declared in {0}'.format(self.config_path))
+            logger.info('using loglevel = info')
             self.config['loglevel'] = 'info'
 
         if 'working_directory' not in self.config.keys():
@@ -225,12 +223,24 @@ class TelegramBot(daemon.DaemonContext):
 
         self.token = self.config['token']
         self.pidfile = self.config['pidfile']
-        self.logfile = self.config['logfile']
         self.sleep_time = float(self.config['sleep_time'])
         self.update_id = int(self.config['update_id'])
         self.working_directory = self.config['working_directory']
         self.apiurl = 'https://api.telegram.org/bot' + self.config['token']
-        Logger.add_file_handler(self.config['logfile'])
+        self.loglevel = self.config['loglevel']
+        # configured_logfiles = [h.baseFilename for h in logger.handlers
+        #         if not isinstance (h,logging.StreamHandler)]
+        if self.logfile == '':
+            self.logfile = self.config['logfile']
+            Logger.add_file_handler(self.logfile)
+        elif self.logfile != self.config['logfile']:
+            logger.info('Configuring new logfile {0}'.format(self.config['logfile']))
+            Logger.remove_file_handler(self.logfile)
+            Logger.add_file_handler(self.config['logfile'])
+            self.logfile = self.config['logfile']
+        else:
+            logger.error('Logfile {0} already configured'.format(self.logfile))
+        Logger.set_verbose(self.loglevel)
 
     def _write_update_id(self, update_id):
         '''
@@ -270,16 +280,6 @@ class TelegramBot(daemon.DaemonContext):
         Returns:
             the resulted JSON object
         '''
-        # headers = {'content-type': 'application/json'}
-        # try:
-        #     req = requests.post(url, data=data, headers=headers, timeout=5.0)
-        #     if files is None:
-        #        req = requests.post(url, data=data, headers=headers, timeout=5.0)
-        #     else:
-        #     if files is not None:
-        #      # headers = {'content-type': 'multipart/form-data'}
-        #      # req = requests.post(url, data=data, headers=headers, files=files, timeout=60.0)
-        #      req = requests.post(url, data=data, files=files)
         try:
             req = requests.post(url=url, data=data, files=files)
         except requests.ConnectionError:
@@ -306,30 +306,18 @@ class TelegramBot(daemon.DaemonContext):
 
     # START DAEMON IMPLEMENTATION ============================================
 
-    # def initial_program_setup(self):
-    #         pass
-
     def do_main_program(self):
         '''
         Implements daemon's main loop using a twisted task object
         '''
-        logger.info('Starting Telegram bot (token={0})'.format(self.token))
         self.task.start(self.sleep_time)
         reactor.run()
 
     def run(self):
+        logger.info('Forking to the backgroud')
+        Logger.remove_console_handler()
         with self.context:
             self.do_main_program()
-        # The following 3 sentences are que equivalent
-        # to the above one: "with xxx: do_main_program"
-        # ---------------------------------------------
-        # self.context.__enter__()
-        # try:
-        #     self.do_main_program()
-        # finally:
-        #     self.context.__exit__(None, None, None)
-        # ---------------------------------------------
-        # Logger.remove_console_handler()
 
     def program_cleanup(self, signum, frame):
         '''
@@ -339,8 +327,7 @@ class TelegramBot(daemon.DaemonContext):
             signum (int): signal number
             frame: signal frame
         '''
-        logger.info('daemon cleanup: signum={0}, \
-                frame={1}'.format(signum, frame))
+        logger.info('daemon cleanup: received signum={0}'.format(signum))
         self.task.stop()
         self.context.terminate(signum, frame)
 
@@ -352,8 +339,7 @@ class TelegramBot(daemon.DaemonContext):
             signum (int): signal number
             frame: signal frame
         '''
-        logger.info('daemon config reload: signum={0}, \
-                frame={1}'.format(signum, frame))
+        logger.info('daemon config reload: received signum={0}'.format(signum))
         self._read_config()
 
     # END DAEMON IMPLEMENTATION ==============================================
@@ -386,7 +372,7 @@ class TelegramBot(daemon.DaemonContext):
         Implements getMe API call
         Modifies: self.first_name, self.username
         '''
-        logger.info('Getting my info')
+        logger.info('Getting my bot info')
         method = 'getMe'
         url = self.apiurl + '/' + method
         json_data = self._request(url, data={}, files=None)
@@ -396,8 +382,8 @@ class TelegramBot(daemon.DaemonContext):
         except:
             logger.error('LoL! My info is not contained in the HTTP response')
         else:
-            logger.info('My first_name is "{0}"'.format(self.first_name))
-            logger.info('My username is "{0}"'.format(self.username))
+            logger.debug('My first_name is "{0}"'.format(self.first_name))
+            logger.debug('My username is "{0}"'.format(self.username))
 
     def get_updates(self):
         logger.info('Getting bot updates')
