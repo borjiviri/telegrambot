@@ -1,18 +1,6 @@
-# no shebang here
 # -*- coding: utf-8 -*-
-#
-# Static class for logging purposes
-#
-# Use from other classes:
-#
-#   from logger import Logger
-#   logger = Logger.logger
-#
-#   logger.debug("Some debug")
-#   logger.info("Some info")
-#   logger.error("Error")
-#
-# More info at http://docs.python.org/lib/module-logging.html
+# borja@libcrack.so
+# jue jun 25 20:05:47 CEST 2015
 
 # GLOBAL IMPORTS
 import logging
