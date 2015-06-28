@@ -16,7 +16,6 @@ from twisted.internet import reactor
 from twisted.internet import task
 from daemon import daemon
 
-import config
 import console
 import command
 
