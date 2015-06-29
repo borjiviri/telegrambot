@@ -3,7 +3,6 @@
 # jue jun 25 20:05:47 CEST 2015
 
 import requests
-import lockfile
 import logging
 import signal
 import time
@@ -74,7 +73,7 @@ class TelegramBot(daemon.DaemonContext):
         self.context = daemon.DaemonContext(
             working_directory=self.working_directory,
             umask=0o002,
-            pidfile=lockfile.FileLock(self.pidfile),
+            pidfile=daemon.pidlockfile.PIDLockFile(self.pidfile),
             files_preserve=[h.stream for h in logger.handlers],
             signal_map={
                 signal.SIGTERM: self.program_cleanup,
