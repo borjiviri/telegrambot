@@ -42,11 +42,6 @@ INSTALL_REQUIRES = [
 #TESTS_REQUIRE = ['behave', 'mock', 'pyparsing', 'pytest']
 LONG_DESC = read('README.md') + '\n\n' + read('CHANGES')
 PLATFORMS = ['Linux']
-PY_MODULES = [
-    'src/console',
-    'src/logger',
-    'src/telegrambot',
-]
 PROVIDES = [NAME]
 CLASSIFIERS = [
     'Development Status :: 3 - Beta',
@@ -76,7 +71,6 @@ PARAMS = {
     'packages': PACKAGES,
     'package_dir': PACKAGE_DIR,
     'package_data': PACKAGE_DATA,
-    'py_modules': PY_MODULES,
     'provides': PROVIDES,
     'requires': INSTALL_REQUIRES,
     'install_requires': INSTALL_REQUIRES,
