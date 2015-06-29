@@ -1,10 +1,12 @@
-# Telegram bot stuff
-*.token
 *.py[co]
 *.log
 *.lock
-*.orig
 *bot.py
-last_update_id.*
+*bot.cfg
+*.orig
+*.egg-info
 notes
 lib
+venv
+dist
+build

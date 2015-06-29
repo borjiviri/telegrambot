@@ -9,9 +9,9 @@ import os
 
 class Console(InteractiveConsole):
 
-    '''
+    """
     Interactive Python interpreter console.
-    '''
+    """
 
     def __init__(self, names=None):
         names = names or {}

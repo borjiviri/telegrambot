@@ -17,21 +17,21 @@ from twisted.internet import reactor
 from twisted.internet import task
 from daemon import daemon
 
-import console
-import command
+from . import console
+from . import command
+from . logger import Logger
 
-from logger import Logger
 logger = Logger.logger
 
 
 class TelegramBot(daemon.DaemonContext):
 
-    '''
+    """
     Telegram Bot
-    '''
+    """
 
     def __init__(self, config_path=None):
-        '''
+        """
         TelegramBot class constructor
 
         Args:
@@ -39,7 +39,7 @@ class TelegramBot(daemon.DaemonContext):
             debug (bool): value to enable debug options
         Raises:
             ValueError: if config_path is not especified
-        '''
+        """
         if config_path is None:
             raise ValueError('required config_path={0}'.format(config_path))
 
@@ -84,7 +84,7 @@ class TelegramBot(daemon.DaemonContext):
         )
 
     def _handle_command(self, message):
-        '''
+        """
         Handler for commands sent to the bot in the form of "/command arg1 ..."
 
         Args:
@@ -92,7 +92,7 @@ class TelegramBot(daemon.DaemonContext):
         Raises:
             AttributeError: if the message text is not an implemented command
             command.ReturnError: if the command execution failed
-        '''
+        """
         photo = None
         files = None
         text = message['text']
@@ -142,13 +142,13 @@ class TelegramBot(daemon.DaemonContext):
             photo=photo)
 
     def _read_config(self):
-        '''
+        """
         Reads and sets the bot's configuration options from self.config_path.
 
         Raises:
             IOError: if self.config_path does not exists
             ValueError: if self.config_path does not include all mandatory opt
-        '''
+        """
         mandatory_options = [
             'token',
             'logfile',
@@ -184,7 +184,9 @@ class TelegramBot(daemon.DaemonContext):
                 raise ValueError
 
         if 'loglevel' not in self.config.keys():
-            logger.info('loglevel not declared in {0}'.format(self.config_path))
+            logger.info(
+                'loglevel not declared in {0}'.format(
+                    self.config_path))
             logger.info('using loglevel = info')
             self.config['loglevel'] = 'info'
 
@@ -234,7 +236,9 @@ class TelegramBot(daemon.DaemonContext):
             self.logfile = self.config['logfile']
             Logger.add_file_handler(self.logfile)
         elif self.logfile != self.config['logfile']:
-            logger.info('Configuring new logfile {0}'.format(self.config['logfile']))
+            logger.info(
+                'Configuring new logfile {0}'.format(
+                    self.config['logfile']))
             Logger.remove_file_handler(self.logfile)
             Logger.add_file_handler(self.config['logfile'])
             self.logfile = self.config['logfile']
@@ -243,13 +247,13 @@ class TelegramBot(daemon.DaemonContext):
         Logger.set_verbose(self.loglevel)
 
     def _write_update_id(self, update_id):
-        '''
+        """
         Updates the update_id configuration file entry (self.config_path)
         also updates self.config['update_id'] and self.update_id
 
         Args:
             update_id (int): Telegram last received message id
-        '''
+        """
         logger.info('Writting update_id {0} to file {1}'.
                     format(update_id, self.config_path))
         try:
@@ -270,7 +274,7 @@ class TelegramBot(daemon.DaemonContext):
             f.close()
 
     def _request(self, url, data, files=None):
-        '''
+        """
         Issue an HTTP request against the Telegram API JSON endpoint.
 
         Args:
@@ -279,7 +283,7 @@ class TelegramBot(daemon.DaemonContext):
             files (dict): JSON files object
         Returns:
             the resulted JSON object
-        '''
+        """
         try:
             req = requests.post(url=url, data=data, files=files)
         except requests.ConnectionError:
@@ -307,9 +311,9 @@ class TelegramBot(daemon.DaemonContext):
     # START DAEMON IMPLEMENTATION ============================================
 
     def do_main_program(self):
-        '''
+        """
         Implements daemon's main loop using a twisted task object
-        '''
+        """
         self.task.start(self.sleep_time)
         reactor.run()
 
@@ -320,25 +324,25 @@ class TelegramBot(daemon.DaemonContext):
             self.do_main_program()
 
     def program_cleanup(self, signum, frame):
-        '''
+        """
         Exists gracefully when a signal SIGTERM is received.
 
         Args:
             signum (int): signal number
             frame: signal frame
-        '''
+        """
         logger.info('daemon cleanup: received signum={0}'.format(signum))
         self.task.stop()
         self.context.terminate(signum, frame)
 
     def reload_program_config(self, signum, frame):
-        '''
+        """
         Reloads the configuration when a signal SIGUSR1 is received.
 
         Args:
             signum (int): signal number
             frame: signal frame
-        '''
+        """
         logger.info('daemon config reload: received signum={0}'.format(signum))
         self._read_config()
 
@@ -368,10 +372,10 @@ class TelegramBot(daemon.DaemonContext):
         logger.debug('Picture data: {0}'.format(data))
 
     def get_me(self):
-        '''
+        """
         Implements getMe API call
         Modifies: self.first_name, self.username
-        '''
+        """
         logger.info('Getting my bot info')
         method = 'getMe'
         url = self.apiurl + '/' + method

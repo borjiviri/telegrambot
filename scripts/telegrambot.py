@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
-from telegrambot import TelegramBot
+from telegrambot.telegrambot import TelegramBot
 
 if __name__ == '__main__':
 
