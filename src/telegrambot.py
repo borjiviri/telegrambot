@@ -14,7 +14,9 @@ import re
 
 from twisted.internet import reactor
 from twisted.internet import task
+
 from daemon import daemon
+from daemon import pidfile
 
 from . import console
 from . import command
@@ -73,8 +75,9 @@ class TelegramBot(daemon.DaemonContext):
         self.context = daemon.DaemonContext(
             working_directory=self.working_directory,
             umask=0o002,
-            pidfile=daemon.pidlockfile.PIDLockFile(self.pidfile),
-            files_preserve=[h.stream for h in logger.handlers],
+            pidfile=pidfile.PIDLockFile(self.pidfile),
+            #files_preserve=[h.stream for h in logger.handlers],
+            files_preserve=[h.stream for h in Logger.logger.handlers],
             signal_map={
                 signal.SIGTERM: self.program_cleanup,
                 signal.SIGHUP: 'terminate',

@@ -32,7 +32,7 @@ URL = 'https://www.github.com/borjiviri/telegrambot'
 LICENSE = read('LICENSE')
 #PACKAGES = find_packages(exclude=['tests', 'tests.*'])
 PACKAGES = [NAME]
-PACKAGE_DATA = {NAME: ['data/*']}
+PACKAGE_DATA = {NAME: ['data/*'],}
 PACKAGE_DIR = {NAME: 'src'}
 INSTALL_REQUIRES = [
     x.replace(
