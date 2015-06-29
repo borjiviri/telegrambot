@@ -20,36 +20,29 @@ def read(relpath):
     with open(abspath) as f:
         return f.read()
 
-NAME = 'dswx-docx'
-VERSION = re.search("__version__ = '([^']+)'",
-                    read('telegram/__init__.py')).group(1)
-#VERSION = read('VERSION').strip()
+NAME = 'telegrambot'
+# VERSION = re.search("__version__ = '([^']+)'",
+#                    read('telegram/__init__.py')).group(1)
+VERSION = read('VERSION').strip()
 DESCRIPTION = 'Telegram Bot module.'
 KEYWORDS = 'telegram bot'
-AUTHOR = 'Borja Ruiz'
+AUTHOR = 'Borja'
 AUTHOR_EMAIL = 'borja@libcrack.so'
-URL = 'http://www.libcrack.so'
+URL = 'https://www.github.com/borjiviri/telegrambot'
 LICENSE = read('LICENSE')
-PACKAGES = find_packages(exclude=['tests', 'tests.*'])
-PACKAGE_DATA = {'telegrambot': ['data/*']}
-PACKAGE_DIR = {'telegrambot': ['telegrambot']}
+#PACKAGES = find_packages(exclude=['tests', 'tests.*'])
+PACKAGES = [NAME]
+PACKAGE_DATA = {NAME: ['data/*'],}
+PACKAGE_DIR = {NAME: 'src'}
 INSTALL_REQUIRES = [
-    'python-daemon',
-    'requests',
-    'twisted',
-]
+    x.replace(
+        '-',
+        '_') for x in read('requirements.txt').split('\n') if x != '']
 #TEST_SUITE = 'tests'
 #TESTS_REQUIRE = ['behave', 'mock', 'pyparsing', 'pytest']
 LONG_DESC = read('README.md') + '\n\n' + read('CHANGES')
 PLATFORMS = ['Linux']
-PY_MODULES = [
-    'telegrambot/config',
-    'telegrambot/console',
-    'telegrambot/logger',
-    'telegrambot/telegrambot',
-]
-PROVIDES = ['telegrambot']
-
+PROVIDES = [NAME]
 CLASSIFIERS = [
     'Development Status :: 3 - Beta',
     'Environment :: Console',
@@ -78,7 +71,6 @@ PARAMS = {
     'packages': PACKAGES,
     'package_dir': PACKAGE_DIR,
     'package_data': PACKAGE_DATA,
-    'py_modules': PY_MODULES,
     'provides': PROVIDES,
     'requires': INSTALL_REQUIRES,
     'install_requires': INSTALL_REQUIRES,

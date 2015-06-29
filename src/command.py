@@ -68,7 +68,7 @@ class magic(BaseCommand):
     def execute(*kwc, **kwz):
         try:
             photo = open(os.path.abspath(
-                './data/magic.gif'), 'rb')
+                'magic.gif'), 'rb')
         except IOError as e:
             return 'Cannot open picture: {0}'.format(e.message)
         else:
