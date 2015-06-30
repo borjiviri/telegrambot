@@ -316,8 +316,8 @@ class TelegramBot(daemon.DaemonContext):
         """
         Implements daemon's main loop using a twisted task object
         """
-        #self.task.start(self.sleep_time)
-        #reactor.run()
+        # self.task.start(self.sleep_time)
+        # reactor.run()
         while True:
             time.sleep(self.sleep_time)
             self.get_updates()
