@@ -59,6 +59,7 @@ class TelegramBot(daemon.DaemonContext):
         self.update_id = -1
         self.config = {}
         self.config_path = config_path
+        self.keywords = ['yonki','bot','magic','droja']
 
         # reads and sets all the above object attributes
         self._read_config()
@@ -84,6 +85,44 @@ class TelegramBot(daemon.DaemonContext):
                 signal.SIGUSR1: self.reload_program_config,
             },
         )
+
+    def _handle_action(self, message):
+        """
+        Handler for actions sent to the bot in the form of "/command arg1 ..."
+
+        Args:
+            message (dict): the received JSON message command
+        Raises:
+            AttributeError: if the message text is not an implemented command
+            command.ReturnError: if the command execution failed
+        """
+        photo = None
+        files = None
+        text = message['text']
+        if text.find('@{0}'.format(self.username)) > 0:
+            logger.info('Detected directed command to myself')
+            text = text.split('@')[0]
+        chat_id = message['chat']['id']
+        user_id = message['from']['id']
+        user_name = message['from']['first_name']
+        logger.info(
+            'Readed keyword from user {0}: {1}'.format(
+                user_name,
+                cmd))
+        if 'droja' in text:
+            text_reply = 'Como peta la droja'
+            photo = None
+        if 'magic' in text:
+            method_to_call = getattr(command, 'magic')
+            photo = method_to_call.execute()
+            text_reply = None
+        else:
+            text_reply = 'Stop speaking about me biatches!',
+        self.send_message(
+            chat_id=chat_id,
+            text=text_reply,
+            files=files,
+            photo=photo)
 
     def _handle_command(self, message):
         """
@@ -394,6 +433,34 @@ class TelegramBot(daemon.DaemonContext):
             logger.debug('My first_name is "{0}"'.format(self.first_name))
             logger.debug('My username is "{0}"'.format(self.username))
 
+    def update(self):
+        logger.info('Getting bot update')
+        method = 'Updates'
+        url = self.apiurl + '/' + method
+        data = {'offset': self.update_id + 1}
+        if self.update_id == 0:
+            data = None
+        json_data = self._request(url, data=data)
+        # TODO implement a catch-all message handler
+        for result in json_data['result']:
+            self._write_update_id(result['update_id'])
+            if result['message']:
+                text = result['message']['text']
+                chat_id = result['message']['chat']['id']
+                user_id = result['message']['from']['id']
+                user_name = result['message']['from']['first_name']
+                # this is global updates - all ppl messages
+                try:
+                    chat_title = result['message']['chat']['title']
+                except:
+                    chat_title = 'null'
+                logger.debug(
+                    'Readed message from user {0}: {1}'.format(
+                        user_name,
+                        text))
+                if text in bot_keywords:
+                    self._handle_action(text)
+
     def get_updates(self):
         logger.info('Getting bot updates')
         method = 'getUpdates'
@@ -402,6 +469,7 @@ class TelegramBot(daemon.DaemonContext):
         if self.update_id == 0:
             data = None
         json_data = self._request(url, data=data)
+        # TODO implement a catch-all message handler
         for result in json_data['result']:
             self._write_update_id(result['update_id'])
             if result['message']:
