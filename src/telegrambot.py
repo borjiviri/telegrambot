@@ -104,17 +104,13 @@ class TelegramBot(daemon.DaemonContext):
             cmd = cmd.split('@')[0]
         chat_id = message['chat']['id']
         user_id = message['from']['id']
-        user_name = message['from']['first_name']
-        logger.info(
-            'Received command from user {0}: {1}'.format(
-                user_name,
-                cmd))
-        text_reply = 'Sorry {0}, I can\'t talk to people'.format(user_name)
-        if self.botmasters and user_name not in self.botmasters:
-            text_reply = 'Sorry {0}, I can\'t obey you. '.format(user_name)
-            text_reply += 'My botmasters are: '.format(
-                ', '.join(
-                    self.botmasters))
+        username = message['from']['username']
+        first_name = message['from']['first_name']
+        logger.info('Received command from user {0}: {1}'.format(username,cmd))
+        text_reply = 'Sorry {0}, I can\'t talk to people'.format(username)
+        if self.botmasters and username not in self.botmasters:
+            text_reply = 'Sorry {0}, I can\'t obey you. '.format(username)
+            text_reply += 'My botmasters are: '.format(','.join(self.botmasters))
         else:
             try:
                 method_to_call = getattr(command, cmd)
@@ -125,23 +121,16 @@ class TelegramBot(daemon.DaemonContext):
                     photo = result
                     text_reply = None
                 elif result is None:
-                    text_reply = 'Command "{0}" executed successfully'.format(
-                        cmd)
+                    text_reply = 'Command "{0}" executed successfully'.format(cmd)
                 else:
                     raise Command.ReturnError()
             except AttributeError:
                 text_reply = 'Command "{0}" not implemented'.format(cmd)
                 logger.error(text_reply)
             except Command.ReturnError as e:
-                text_reply = 'Failed to execute command "{0}": {1}'.format(
-                    cmd,
-                    e.message)
+                text_reply = 'Failed to execute command "{0}": {1}'.format(cmd,e.message)
                 logger.error(text_reply)
-        self.send_message(
-            chat_id=chat_id,
-            text=text_reply,
-            files=files,
-            photo=photo)
+        self.send_message(chat_id=chat_id,text=text_reply,files=files,photo=photo)
 
     def _read_config(self):
         """
@@ -223,7 +212,7 @@ class TelegramBot(daemon.DaemonContext):
             self.config['botmasters'] = None
             self.botmasters = None
         else:
-            self.botmasters = self.config['botmasters'].split(',')
+            self.botmasters = self.config['botmasters'].replace(' ','').split(',')
 
         self.token = self.config['token']
         self.pidfile = self.config['pidfile']
@@ -408,24 +397,18 @@ class TelegramBot(daemon.DaemonContext):
                 text = result['message']['text']
                 chat_id = result['message']['chat']['id']
                 user_id = result['message']['from']['id']
-                user_name = result['message']['from']['first_name']
-                text_reply = 'Sorry {0}, I can\'t talk to people'.format(
-                    user_name)
+                username = result['message']['from']['username']
+                first_name = result['message']['from']['first_name']
+                text_reply = 'Sorry {0}, I can\'t talk to people'.format(username)
                 try:
                     chat_title = result['message']['chat']['title']
                 except:
                     chat_title = 'null'
-                logger.debug(
-                    'Received message from user {0}: {1}'.format(
-                        user_name,
-                        text))
+                logger.debug('Received message from user {0}: {1}'.format(username,text))
                 if text.startswith('/'):
                     self._handle_command(result['message'])
                 else:
                     self.send_message(chat_id, text_reply)
-                    logger.debug(
-                        'Replying to user {0}: {1}'.format(
-                            user_name,
-                            text_reply))
+                    logger.debug('Replying to user {0}: {1}'.format(username,text_reply))
 
     # END TELEGRAM API IMPLEMENTATION ========================================
