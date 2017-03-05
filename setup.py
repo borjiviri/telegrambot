@@ -26,9 +26,9 @@ NAME = 'telegrambot'
 VERSION = read('VERSION').strip()
 DESCRIPTION = 'Telegram Bot module.'
 KEYWORDS = 'telegram bot'
-AUTHOR = 'Borja'
-AUTHOR_EMAIL = 'borja@libcrack.so'
-URL = 'https://www.github.com/borjiviri/telegrambot'
+AUTHOR = 'Libcrack'
+AUTHOR_EMAIL = 'devnull@libcrack.so'
+URL = 'https://www.github.com/libcrack/telegrambot'
 LICENSE = read('LICENSE')
 #PACKAGES = find_packages(exclude=['tests', 'tests.*'])
 PACKAGES = [NAME]
